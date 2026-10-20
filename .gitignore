@@ -1,0 +1,34 @@
+# Output di compilazione: i PDF li produce la CI, non si committano
+build/
+site/
+*.pdf
+!allegati/**/*.pdf
+
+# File temporanei di LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex(busy)
+*.bbl
+*.blg
+*.nav
+*.snm
+*.vrb
+*.xdv
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Sistema operativo ed editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/

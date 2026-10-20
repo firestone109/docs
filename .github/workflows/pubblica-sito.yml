@@ -1,0 +1,53 @@
+# =====================================================================
+#  Pubblica il sito  --  parte a ogni modifica su main (cioè a ogni
+#  pull request unita) e si può lanciare a mano dalla scheda Actions.
+#  Compila tutti i documenti e pubblica i PDF su GitHub Pages:
+#  https://git-push-team.github.io/docs/
+# =====================================================================
+name: Pubblica il sito
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  compila:
+    name: Compila tutti i documenti
+    runs-on: ubuntu-24.04     # fissata di proposito, vedi anteprima-pr.yml
+    timeout-minutes: 30
+    steps:
+      - name: Scarica il repository
+        uses: actions/checkout@v7
+
+      - name: Installa LaTeX
+        uses: ./.github/actions/setup-latex
+
+      - name: Compila e prepara il sito
+        run: python3 scripts/build.py
+
+      - name: Carica il sito
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  pubblica:
+    name: Pubblica su GitHub Pages
+    needs: compila
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Pubblica
+        id: deployment
+        uses: actions/deploy-pages@v5

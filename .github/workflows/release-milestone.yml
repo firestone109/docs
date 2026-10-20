@@ -1,0 +1,44 @@
+# =====================================================================
+#  Release di una milestone  --  parte quando si crea un tag che inizia
+#  con candidatura, rtb oppure pb (es. rtb-v1). Compila tutti i
+#  documenti e crea una GitHub Release con i PDF allegati: è la
+#  "fotografia" ufficiale della consegna. Come si fa: GUIDA.md, ricetta 10.
+# =====================================================================
+name: Release di una milestone
+
+on:
+  push:
+    tags:
+      - "candidatura*"
+      - "rtb*"
+      - "pb*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Crea la release
+    runs-on: ubuntu-24.04     # fissata di proposito, vedi anteprima-pr.yml
+    timeout-minutes: 30
+    steps:
+      - name: Scarica il repository
+        uses: actions/checkout@v7
+
+      - name: Installa LaTeX
+        uses: ./.github/actions/setup-latex
+
+      - name: Compila tutti i documenti
+        run: python3 scripts/build.py
+
+      - name: Crea la release con i PDF
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          mkdir -p release
+          find site -name '*.pdf' -exec cp {} release/ \;
+          (cd site && zip -qr "../release/documenti-$TAG.zip" . -x 'documenti.json')
+          gh release create "$TAG" release/* \
+            --title "Consegna $TAG" \
+            --notes-file build/riepilogo.md
