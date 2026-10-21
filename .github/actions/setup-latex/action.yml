@@ -18,5 +18,4 @@ runs:
           texlive-fonts-recommended \
           texlive-pictures \
           texlive-lang-italian \
-          lmodern \
-          poppler-utils     # pdftoppm: anteprime dei PDF sul sito
+          lmodern
