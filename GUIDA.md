@@ -27,6 +27,9 @@ Non serve conoscere LaTeX né Git: seguite le ricette e copiate i comandi così 
     - [R10. Fare la release di una consegna (RTB, PB)](#r10-fare-la-release-di-una-consegna-rtb-pb)
     - [R11. Cambiare i dati del gruppo](#r11-cambiare-i-dati-del-gruppo)
     - [R12. Verificare il lavoro di un altro (Verificatore)](#r12-verificare-il-lavoro-di-un-altro-verificatore)
+    - [R13. Passare alla milestone successiva](#r13-passare-alla-milestone-successiva)
+    - [R14. Caricare un verbale esterno firmato](#r14-caricare-un-verbale-esterno-firmato)
+    - [R15. Aggiornare il sito: milestone, diapositive, gruppo](#r15-aggiornare-il-sito-milestone-diapositive-gruppo)
 5. [Le versioni: la regola semplice](#5-le-versioni-la-regola-semplice)
 6. [Prontuario dei comandi](#6-prontuario-dei-comandi)
 7. [Quando qualcosa va storto](#7-quando-qualcosa-va-storto)
@@ -48,6 +51,7 @@ Non serve conoscere LaTeX né Git: seguite le ricette e copiate i comandi così 
 | **Pull request** (PR) | La richiesta di unire il vostro branch a `main`. Lì il Verificatore controlla. |
 | **Merge** | L'unione della PR in `main`. Dopo il merge il sito si aggiorna da solo. |
 | **CI** / **Action** | I controlli automatici di GitHub: compilano i PDF e li commentano nella PR. |
+| **Milestone** | Una delle tre consegne: **Candidatura**, **RTB** (Requirements and Technology Baseline), **PB** (Product Baseline). Ognuna ha la sua cartella. |
 | **Chiave** | Il nome breve di una persona usato nei documenti: `guglielmo`, `corro`… (elenco in `template/dati-gruppo.tex`). |
 | **Preambolo** | La parte del `.tex` **prima** di `\begin{document}`: lì si scrivono titolo, data, persone, registro. |
 | **Registro delle modifiche** | La tabella con tutte le versioni del documento. Si scrive con le righe `\modifica{...}`. |
@@ -68,8 +72,10 @@ Si fa **una volta sola**. Installate, in quest'ordine:
 Su Linux, TeX Live si installa così:
 
 ```bash
-sudo apt install latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-lang-italian texlive-pictures
+sudo apt install latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-lang-italian texlive-pictures poppler-utils
 ```
+
+(`poppler-utils` serve solo a vedere, nel sito di prova, l'anteprima della prima pagina dei documenti. Su Windows e macOS se ne può fare a meno: al posto dell'anteprima compare un riquadro con le iniziali. Sul sito vero le anteprime ci sono sempre.)
 
 > ⚠️ Su Windows usate **TeX Live**, non MiKTeX: TeX Live include già Perl, che serve a `latexmk`.
 > Se usate MiKTeX dovete installare anche [Strawberry Perl](https://strawberryperl.com/).
@@ -102,26 +108,54 @@ In basso a destra VS Code propone le **estensioni consigliate**: installatele (l
 python3 scripts/build.py
 ```
 
-Deve finire con `Fatto: N PDF in site/`. Aprite il file `site/index.html` con il browser: vedete il sito con i PDF. Se funziona, siete pronti. ✅
+Deve finire con `Fatto: N PDF in site/`. Aprite il file `site/index.html` con il browser: vedete il sito con i PDF, divisi per milestone. Se funziona, siete pronti. ✅
 
 ---
 
 ## 2. Mappa del repository: cosa si tocca e cosa no
 
+I documenti stanno in **tre cartelle, una per milestone**, tutte fatte allo stesso modo:
+
+```text
+docs/
+├── Candidatura/
+│   ├── documenti/
+│   │   ├── esterni/      documenti a uso esterno (lettera di candidatura, preventivo…)
+│   │   └── interni/      documenti a uso interno
+│   └── verbali/
+│       ├── esterni/      VE-AAAA-MM-GG.tex  (incontri con proponenti o docenti)
+│       └── interni/      VI-AAAA-MM-GG.tex  (riunioni del gruppo)
+├── RTB/                  stessa struttura
+└── PB/                   stessa struttura
+```
+
+**Dove metto il mio file?** Rispondete a tre domande, una per livello di cartella:
+
+| Domanda | Risposta → cartella |
+| --- | --- |
+| 1. Per quale consegna è? | `Candidatura/`, `RTB/` o `PB/` (quella **in corso**) |
+| 2. È il verbale di un incontro? | sì → `verbali/`; no (Norme, Piani, lettere…) → `documenti/` |
+| 3. Chi lo legge? | solo il gruppo → `interni/`; proponente o docenti → `esterni/` |
+
+Esempi: riunione del gruppo del 3 novembre durante l'RTB → `RTB/verbali/interni/VI-2026-11-03.tex`; Norme di Progetto → `RTB/documenti/interni/norme-di-progetto/norme-di-progetto.tex`; lettera di presentazione per la PB → `PB/documenti/esterni/lettera-presentazione-pb.tex`.
+
+Dentro queste cartelle potete creare sottocartelle a piacere (per esempio una per ogni documento con capitoli). I nomi `Candidatura`, `RTB`, `PB` vanno scritti **esattamente così**, maiuscole comprese: una cartella `rtb/` verrebbe ignorata (la PR ve lo segnala).
+
+**E il PDF?** Non lo create voi. Dopo il merge la CI compila il documento e **salva il PDF accanto al `.tex`**, con lo stesso nome: accanto a `RTB/verbali/interni/VI-2026-11-03.tex` compare `VI-2026-11-03.pdf` (con un commit del bot *"Aggiorna i PDF accanto ai sorgenti"*). Lo stesso PDF va sul sito, con la versione nel nome. Il PDF che vedete mentre lavorate (VS Code o `build.py`) è una prova e resta in `build/`.
+
 | Percorso | Cos'è | Si tocca? |
 | --- | --- | --- |
-| `verbali/interni/` | verbali delle riunioni del gruppo (`VI-AAAA-MM-GG.tex`) | ✅ sì |
-| `verbali/esterni/` | verbali degli incontri esterni (`VE-AAAA-MM-GG.tex`) | ✅ sì |
-| `documenti/` | Norme, Piani, Analisi, Glossario…: **una cartella per documento** | ✅ sì |
-| `lettere/` | lettere di presentazione per RTB e PB | ✅ sì |
-| `candidatura/` | documenti della candidatura | ✅ sì |
+| `Candidatura/`, `RTB/`, `PB/` | i `.tex` dei documenti e dei verbali, divisi come sopra | ✅ sì, i `.tex` |
+| i `.pdf` accanto ai `.tex` | li crea e li aggiorna la CI dopo il merge | ❌ mai a mano (unica eccezione: [R14](#r14-caricare-un-verbale-esterno-firmato)) |
 | `allegati/` | immagini usate nei documenti, in sottocartelle | ✅ sì |
 | `template/modelli/` | i file **da copiare** per iniziare un documento | 👀 si copiano, non si modificano |
 | `template/esempi/` | esempi completi da guardare quando non sapete come fare una cosa | 👀 solo da guardare |
 | `template/dati-gruppo.tex` | nome, email e membri del gruppo | ⚠️ solo Amministratori ([R11](#r11-cambiare-i-dati-del-gruppo)) |
+| `template/sito.toml` | impostazioni del sito: stato delle milestone, link extra, capitolato, account GitHub | ⚠️ solo Amministratori ([R15](#r15-aggiornare-il-sito-milestone-diapositive-gruppo)) |
+| `<Milestone>/diapositive/` | PDF delle presentazioni e dei diari di bordo, fatti fuori da LaTeX | ✅ sì ([R15](#r15-aggiornare-il-sito-milestone-diapositive-gruppo)) |
 | `template/gpt.cls` | la classe LaTeX: decide l'aspetto di tutti i documenti | ⚠️ solo Amministratori |
-| `scripts/build.py`, `latexmkrc`, `.github/`, `.vscode/` | compilazione e automazioni | ⚠️ solo Amministratori |
-| `build/`, `site/` | file generati dalla compilazione: si possono cancellare | ❌ non si caricano su GitHub (sono ignorati) |
+| `scripts/build.py`, `scripts/sito.py`, `latexmkrc`, `.github/`, `.vscode/` | compilazione, pagina del sito e automazioni | ⚠️ solo Amministratori |
+| `build/`, `site/` | file generati dalla compilazione sul vostro computer (PDF di prova, sito di prova): si possono cancellare | ❌ non si caricano su GitHub (sono ignorati) |
 
 Ecco come vengono i tre tipi di documento:
 
@@ -151,7 +185,9 @@ git checkout -b doc/12-verbale-26-ottobre
 **Passo 4 — Lavorate.** Seguite la ricetta giusta (sezione 4). Per vedere il PDF:
 
 - in **VS Code**: salvate il file (`Ctrl+S`, su Mac `Cmd+S`); il PDF si apre in una scheda accanto (se non si apre: icona con la lente in alto a destra, *View LaTeX PDF*);
-- oppure dal **terminale**: `python3 scripts/build.py verbali/interni/VI-2026-10-26.tex` → il PDF è in `site/verbali/interni/`.
+- oppure dal **terminale**: `python3 scripts/build.py Candidatura/verbali/interni/VI-2026-10-26.tex` → il PDF di prova è in `build/Candidatura/verbali/interni/` (e, con la versione nel nome, in `site/`).
+
+Nessuno dei due mette il PDF accanto al `.tex`: quello lo fa la CI dopo il merge.
 
 **Passo 5 — Salvate su GitHub** (commit + push):
 
@@ -176,7 +212,12 @@ Le volte successive, nello stesso branch, bastano `git add -A`, `git commit -m "
 - il link **Apri il PDF** (se avete cambiato un solo documento si apre nel browser; se sono di più, scaricate lo zip);
 - se c'è un ❌, le righe d'errore con file e numero di riga: correggete, poi rifate il passo 5 (commit + push) e il commento si aggiorna da solo.
 
-Quando il Verificatore approva (vedi [R12](#r12-verificare-il-lavoro-di-un-altro-verificatore)), si clicca **Merge pull request**: dopo qualche minuto il PDF è sul sito <https://git-push-team.github.io/docs/>. 🎉
+Quando il Verificatore approva (vedi [R12](#r12-verificare-il-lavoro-di-un-altro-verificatore)), si clicca **Merge pull request**. Dopo qualche minuto:
+
+- il PDF è sul sito <https://git-push-team.github.io/docs/>, nella sezione della sua milestone; 🎉
+- nel repository, accanto al vostro `.tex`, compare il `.pdf` con lo stesso nome (lo salva il bot).
+
+Per questo, prima di iniziare un nuovo lavoro, rifate sempre il passo 2 (`git pull`): così avete anche i PDF aggiornati.
 
 > 💡 Se nella PR compare *"This branch is out-of-date with the base branch"*, cliccate **Update branch**.
 
@@ -186,11 +227,13 @@ Quando il Verificatore approva (vedi [R12](#r12-verificare-il-lavoro-di-un-altro
 
 ### R1. Scrivere un verbale interno
 
-**1. Copiate il modello** dandogli come nome la data della riunione (`VI-AAAA-MM-GG.tex`):
+**1. Copiate il modello** nella cartella `verbali/interni/` della milestone in corso, dandogli come nome la data della riunione (`VI-AAAA-MM-GG.tex`):
 
 ```bash
-cp template/modelli/verbale-interno.tex verbali/interni/VI-2026-10-26.tex
+cp template/modelli/verbale-interno.tex Candidatura/verbali/interni/VI-2026-10-26.tex
 ```
+
+(Durante l'RTB la cartella sarà `RTB/verbali/interni/`, durante la PB `PB/verbali/interni/`.)
 
 (Su Windows potete anche copiare e rinominare il file da Esplora risorse.)
 
@@ -241,7 +284,7 @@ Le decisioni si numerano da sole (D1, D2…), le azioni pure (A1, A2…). `tutti
 Come R1, ma con il modello esterno e il nome `VE-...`:
 
 ```bash
-cp template/modelli/verbale-esterno.tex verbali/esterni/VE-2026-10-22.tex
+cp template/modelli/verbale-esterno.tex Candidatura/verbali/esterni/VE-2026-10-22.tex
 ```
 
 In più rispetto al verbale interno, nel preambolo:
@@ -261,7 +304,7 @@ e nel testo le domande con le risposte:
 
 In fondo al PDF compare da solo il riquadro **Approvazione** con lo spazio per la firma.
 
-> ⚠️ **Firma dell'azienda**: dopo il merge, mandate il PDF all'azienda e conservate la versione firmata nella cartella condivisa del gruppo. Il sito pubblica sempre la versione compilata (senza firma).
+> ⚠️ **Firma dell'azienda**: dopo il merge, mandate all'azienda il PDF che la CI ha salvato accanto al `.tex`. Quando torna firmato, caricatelo accanto con un nome diverso: [R14](#r14-caricare-un-verbale-esterno-firmato). Il sito pubblica la versione compilata (senza firma).
 
 👀 Esempio completo: `template/esempi/esempio-verbale-esterno.tex`.
 
@@ -290,11 +333,11 @@ Esempio: nel verbale `VI-2026-10-19` (versione `1.0.0`) c'è un nome sbagliato.
 
 ### R4. Creare un documento (Norme, Piani, Analisi…)
 
-**1. Create la cartella e copiate il modello.** Il nome del file diventa il nome del PDF.
+**1. Create la cartella e copiate il modello.** La cartella va in `documenti/interni/` o `documenti/esterni/` della milestone in corso; il nome del file diventa il nome del PDF.
 
 ```bash
-mkdir documenti/norme-di-progetto
-cp template/modelli/documento.tex documenti/norme-di-progetto/norme-di-progetto.tex
+mkdir RTB/documenti/interni/norme-di-progetto
+cp template/modelli/documento.tex RTB/documenti/interni/norme-di-progetto/norme-di-progetto.tex
 ```
 
 Nomi suggeriti: `norme-di-progetto`, `piano-di-progetto`, `piano-di-qualifica`, `analisi-dei-requisiti`, `glossario`, `specifica-tecnica`, `manuale-utente`.
@@ -304,7 +347,7 @@ Nomi suggeriti: `norme-di-progetto`, `piano-di-progetto`, `piano-di-qualifica`, 
 | Riga | Cosa scrivere |
 | --- | --- |
 | `\titolo{...}` | il nome del documento: `\titolo{Norme di Progetto}` |
-| `\uso{...}` | `interno` per le Norme di Progetto, `esterno` per tutti gli altri |
+| `\uso{...}` | `interno` o `esterno`, **come la cartella** (`documenti/interni/` → `interno`). Se non coincidono la PR ve lo segnala |
 | `\responsabile{...}` | la chiave del Responsabile, che approva il documento |
 | `\modifica{0.1.0}{...}` | la prima riga del registro |
 
@@ -323,7 +366,7 @@ Nomi suggeriti: `norme-di-progetto`, `piano-di-progetto`, `piano-di-qualifica`, 
 Per documenti lunghi (Norme, Analisi) conviene **un file per capitolo**: si lavora in tanti senza pestarsi i piedi.
 
 ```text
-documenti/norme-di-progetto/
+RTB/documenti/interni/norme-di-progetto/
 ├── norme-di-progetto.tex        <- file principale: preambolo + elenco dei capitoli
 └── capitoli/
     ├── introduzione.tex
@@ -351,8 +394,10 @@ così, quando salvate un capitolo in VS Code, viene compilato il documento inter
 
 ### R6. Scrivere una lettera
 
+Una lettera è un documento esterno: va in `documenti/esterni/` della sua milestone.
+
 ```bash
-cp template/modelli/lettera.tex lettere/lettera-presentazione-rtb.tex
+cp template/modelli/lettera.tex RTB/documenti/esterni/lettera-presentazione-rtb.tex
 ```
 
 Preambolo:
@@ -469,9 +514,9 @@ git tag rtb-v1
 git push origin rtb-v1
 ```
 
-Dopo qualche minuto, nella pagina del repository, sezione *Releases*, compare **"Consegna rtb-v1"** con tutti i PDF allegati e uno zip. È la "fotografia" ufficiale della consegna.
+Dopo qualche minuto, nella pagina del repository, sezione *Releases*, compare **"Consegna rtb-v1"** con i PDF della cartella `RTB/` allegati uno per uno e uno zip che mantiene le cartelle (`documenti/esterni`, `verbali/interni`…). È la "fotografia" ufficiale della consegna, e resta lì anche quando i documenti cambieranno per la PB. Il sito ha in fondo il link *Archivio delle consegne* che porta a questa pagina.
 
-- Il nome del tag deve iniziare con `candidatura`, `rtb` oppure `pb` (es. `candidatura-v1`, `rtb-v1`, `pb-v1`).
+- Il nome del tag sceglie la cartella: `candidatura…` → `Candidatura/`, `rtb…` → `RTB/`, `pb…` → `PB/` (es. `candidatura-v1`, `rtb-v1`, `pb-v1`).
 - ⚠️ Create **solo il tag** con i comandi qui sopra: non create la release a mano dal sito, altrimenti l'automazione trova la release già esistente e si ferma.
 
 ---
@@ -520,7 +565,91 @@ Vi arriva una richiesta di revisione (mail o campanella di GitHub).
     - **modifica a un documento già approvato** (es. riga `1.1.0` con `--`): scrivete la vostra chiave al posto di `--` nella riga in cima;
     - in basso, *Commit changes* (lasciate "Commit directly to the doc/… branch").
 6. Aspettate che il commento automatico torni ✅ con la nuova versione, poi *Review changes* → **Approve** → *Submit review*.
-7. Cliccate **Merge pull request** → *Confirm merge*. Fatto: il sito si aggiorna da solo.
+7. Cliccate **Merge pull request** → *Confirm merge*. Fatto: il sito si aggiorna da solo e il bot salva il PDF accanto al `.tex`.
+
+---
+
+### R13. Passare alla milestone successiva
+
+Ogni file vive in **una sola cartella**: non si fanno copie (due copie dello stesso documento finirebbero per divergere).
+
+- **Verbali**: restano dove sono. I verbali dell'RTB stanno in `RTB/verbali/`; dalla prima riunione dopo l'RTB si scrive in `PB/verbali/`.
+- **Documenti che continuano** (Norme, Piani, Analisi, Glossario…): all'inizio dei lavori per la milestone nuova, un Amministratore li **sposta** con una PR, per esempio:
+
+  ```bash
+  git checkout main
+  git pull
+  git checkout -b doc/40-norme-verso-pb
+  git mv RTB/documenti/interni/norme-di-progetto PB/documenti/interni/norme-di-progetto
+  git commit -m "Norme di Progetto: si lavora per la PB"
+  git push -u origin doc/40-norme-verso-pb
+  ```
+
+  Dopo il merge il bot mette il PDF nella cartella nuova e toglie quello rimasto nella vecchia. La versione consegnata all'RTB non si perde: è nella release *Consegna rtb-…* ([R10](#r10-fare-la-release-di-una-consegna-rtb-pb)) e nella storia di Git.
+- **Prima di spostare**, assicuratevi che la release della milestone appena chiusa sia stata fatta.
+
+---
+
+### R14. Caricare un verbale esterno firmato
+
+L'unico PDF che si carica a mano è la copia firmata dal proponente. Salvatela **accanto al `.tex`** con `-firmato` in fondo al nome:
+
+```text
+RTB/verbali/esterni/VE-2026-11-05.tex           <- scritto da voi
+RTB/verbali/esterni/VE-2026-11-05.pdf           <- creato dal bot
+RTB/verbali/esterni/VE-2026-11-05-firmato.pdf   <- la scansione firmata, caricata da voi
+```
+
+Poi il solito giro (branch, commit, push, PR). Il bot non tocca mai i file `-firmato.pdf`, e la PR non li segnala come errore. Sul sito, accanto al verbale compare il pulsante **Firmato** che apre la copia firmata.
+
+---
+
+### R15. Aggiornare il sito: milestone, diapositive, gruppo
+
+Il sito si costruisce da solo dai documenti. Le poche cose che nei documenti non ci sono si scrivono in **`template/sito.toml`** (con una PR, come sempre). Il file è commentato riga per riga.
+
+**Cosa mostra il sito**, dall'alto:
+
+1. il **grafo delle milestone**: Candidatura → RTB → PB, con un pallino per ogni verbale. Cliccando una milestone si va ai suoi documenti;
+2. la **milestone in corso**: la lettera di presentazione in evidenza, poi documenti esterni e interni con l'anteprima della prima pagina, poi i verbali esterni e interni;
+3. le **diapositive**, se ce ne sono;
+4. l'**archivio**: le altre milestone con documenti, ognuna in un riquadro che si apre;
+5. **il gruppo** (membri, capitolato) e i **contatti**.
+
+In alto c'è la **ricerca** (tasto `/` per andarci): filtra documenti e verbali mentre scrivete.
+
+**Cambiare la milestone in corso** (per esempio dopo la consegna della candidatura). In `template/sito.toml`:
+
+```toml
+[milestone.Candidatura]
+stato = "conclusa"
+
+[milestone.RTB]
+stato = "in corso"
+```
+
+La Candidatura passa nell'archivio e l'RTB va in cima. Gli stati possibili sono `"da iniziare"`, `"in corso"` e `"conclusa"`.
+
+**Aggiungere un pulsante a una milestone** (Proof of Concept, MVP, glossario online…):
+
+```toml
+[milestone.RTB]
+stato = "in corso"
+link = [ { testo = "Proof of Concept", url = "https://github.com/Git-Push-Team/poc" } ]
+```
+
+**Dopo l'assegnazione del capitolato**: compilate `capitolato`, `proponente` e, se volete, `descrizione` nella sezione `[progetto]`. Compaiono nella sezione *Il gruppo*.
+
+**Foto dei membri**: nella sezione `[github]` scrivete il nome utente GitHub di ognuno (senza `@`), es. `guglielmo = "fguglielmo"`. Chi resta vuoto ha le iniziali al posto della foto.
+
+**Diapositive e diari di bordo**: sono PDF fatti fuori da LaTeX (Google Slides, PowerPoint…). Esportateli in PDF e metteteli in `diapositive/` dentro la milestone:
+
+```text
+RTB/diapositive/presentazione-rtb.pdf    -> "Presentazione RTB", con anteprima
+RTB/diapositive/diario-2026-11-14.pdf    -> "Diario di bordo, 14 novembre 2026"
+```
+
+I file che iniziano con `diario` e contengono una data finiscono tra i *Diari di bordo*; tutti gli altri tra le *Presentazioni*, con il titolo preso dal nome del file. Questi PDF si caricano normalmente con commit e PR: la CI non li tocca.
 
 ---
 
@@ -585,9 +714,10 @@ Cosa controlla la classe da sola: che la versione abbia tre numeri, che la data 
 | Comando | Cosa fa |
 | --- | --- |
 | `python3 scripts/build.py` | compila tutti i documenti e crea il sito in `site/` |
-| `python3 scripts/build.py percorso/file.tex` | compila un solo documento |
+| `python3 scripts/build.py percorso/file.tex` | compila un solo documento (PDF di prova in `build/`) |
+| `python3 scripts/build.py RTB` | compila solo i documenti di una cartella (qui: tutta la milestone RTB) |
 | `python3 scripts/build.py --esempi` | compila anche modelli ed esempi (utile dopo aver toccato la classe) |
-| `python3 scripts/build.py --list` | elenca i documenti trovati, con versione |
+| `python3 scripts/build.py --list` | elenca i documenti trovati, con versione, milestone e sezione del sito |
 | `python3 scripts/build.py --clean` | cancella `build/` e `site/` e ricompila tutto da capo |
 
 ---
@@ -635,6 +765,10 @@ Dove leggere l'errore: nella **PR**, nel commento automatico (righe `file:riga: 
 | La PR dice *out-of-date with the base branch* | pulsante **Update branch** nella PR |
 | La PR ha un **conflitto** | chiedete a un Amministratore: è normale, si risolve in due minuti |
 | Il commento dice ⚠️ *Documenti NON toccati da questa pull request che però non compilano* | non è colpa vostra: avvisate gli Amministratori (`main` ha un problema) |
+| Il commento dice ❌ *Questa pull request contiene PDF che crea da sola la CI* | avete caricato un PDF che fa il bot (succede se compilate con un editor diverso da VS Code, che mette il PDF accanto al `.tex`). **Cancellate quel PDF**: sul computer eliminatelo dalla cartella, poi commit e push; oppure sul sito di GitHub aprite il file nel vostro branch → **⋯** → *Delete file* → *Commit changes*. Dopo il merge il bot lo rigenera |
+| Il commento dice ⚠️ *Da controllare* | il file è in una cartella che non torna col contenuto (es. un verbale interno in `verbali/esterni/`, o `\uso{esterno}` in `documenti/interni/`), oppure è fuori da `Candidatura/`, `RTB/`, `PB/`. Non blocca la PR, ma sistematelo: spostate il file o correggete la riga indicata |
+| GitHub Desktop / `git status` mostra un `.pdf` modificato accanto a un `.tex` | l'avete ricompilato con un altro editor. Annullate la modifica: in GitHub Desktop tasto destro sul file → *Discard changes*; da terminale `git restore percorso/file.pdf` |
+| Dopo il merge il PDF accanto al `.tex` non compare | nella scheda *Actions*, esecuzione *Pubblica il sito*: se c'è l'avviso *PDF non salvati*, manca la configurazione della chiave del bot ([sezione 8](#8-impostazioni-da-fare-una-volta-sola-amministratori), passi A–F). Il sito invece è aggiornato |
 
 **Problemi del computer:**
 
@@ -644,6 +778,19 @@ Dove leggere l'errore: nella **PR**, nel commento automatico (righe `file:riga: 
 | `python: command not found` | su macOS/Linux scrivete `python3`; su Windows provate `py` |
 | In VS Code (con TeX Live 2025 o più recente) compare `ignored error: Infinite glue shrinkage found in box being split` | è un avviso innocuo di LaTeX quando una tabella lunga va a capo pagina: il PDF è corretto, ignoratelo |
 
+**Problemi del sito:**
+
+| Problema | Cosa fare |
+| --- | --- |
+| `Errore in template/sito.toml: ...` (nel terminale o nella scheda *Actions*) | c'è un errore di scrittura nella riga indicata: di solito manca una virgoletta (`"testo"`) o una parentesi. Confrontate con le righe vicine ([R15](#r15-aggiornare-il-sito-milestone-diapositive-gruppo)) |
+| `Attenzione: con Python più vecchio del 3.11 il sito usa le impostazioni predefinite` | succede solo in locale: il vostro sito di prova ignora `sito.toml`. Installate Python 3.11 o più recente (oppure `pip install tomli`). Il sito vero non ha questo problema |
+| Nel sito di prova, al posto dell'anteprima dei documenti c'è un riquadro con le iniziali | manca `pdftoppm` sul vostro computer: è normale su Windows e macOS (su Linux: `sudo apt install poppler-utils`). Il sito vero ha sempre le anteprime |
+| In cima al sito compare la milestone sbagliata | in `template/sito.toml` cambiate lo `stato` delle milestone: quella mostrata in cima è la prima `"in corso"` ([R15](#r15-aggiornare-il-sito-milestone-diapositive-gruppo)) |
+| Un membro non ha la foto | il suo nome utente GitHub manca o è sbagliato nella sezione `[github]` di `template/sito.toml` (senza `@`) |
+| Una presentazione finisce tra i diari di bordo (o viceversa) | contano solo il nome del file e la cartella: i diari di bordo iniziano con `diario` e contengono la data (`diario-2026-11-14.pdf`), e tutti stanno in `<Milestone>/diapositive/` |
+| Nelle *Actions*, il passo *Compila* dice `Nessun documento da compilare` e il sito è vuoto | i `.tex` non sono dentro `Candidatura/`, `RTB/` o `PB/` (scritte esattamente così, maiuscole comprese): per esempio sono ancora nelle vecchie cartelle `verbali/`, `documenti/`. Gli avvisi gialli nella pagina dell'Action dicono quali file spostare |
+| Il pulsante **Firmato** non compare | la copia firmata deve stare accanto al `.tex` con lo stesso nome più `-firmato`: `VE-2026-11-05-firmato.pdf` accanto a `VE-2026-11-05.tex` ([R14](#r14-caricare-un-verbale-esterno-firmato)) |
+
 ---
 
 ## 8. Impostazioni da fare una volta sola (Amministratori)
@@ -651,18 +798,65 @@ Dove leggere l'errore: nella **PR**, nel commento automatico (righe `file:riga: 
 Sul sito di GitHub, nella pagina del repository `docs`, scheda **Settings**:
 
 1. **Pages** → *Build and deployment* → *Source*: **GitHub Actions**. Senza questo il sito non si pubblica. (Con il piano gratuito di GitHub, Pages funziona solo se il repository è **pubblico**.)
-2. **Branches** (o *Rules → Rulesets*) → regola per `main`:
-    - *Require a pull request before merging*, con almeno **1 approvazione**;
-    - *Require status checks to pass*, scegliendo **Compila i documenti**.
+2. **Issues → Labels** (dalla scheda *Issues*, pulsante *Labels*): create le etichette `documentazione` ed `errore`, usate dai modelli delle issue.
+3. **La chiave del bot e la protezione di `main`**: passi A–F qui sotto.
 
-   Così nessuno può unire un documento non verificato o che non compila.
-3. **Issues → Labels** (dalla scheda *Issues*, pulsante *Labels*): create le etichette `documentazione` ed `errore`, usate dai modelli delle issue.
+### La chiave del bot e la protezione di `main`
+
+`main` è protetto: si cambia solo con una pull request approvata. Il bot che salva i PDF accanto ai `.tex` però scrive su `main` **dopo** il merge, senza PR, quindi gli serve un permesso speciale. GitHub non lo concede al bot normale delle Actions: lo si dà a una **chiave di deployment** (*deploy key*) che solo il bot conosce. Se saltate questa parte non si rompe niente: il sito si aggiorna lo stesso, solo che i PDF non compaiono accanto ai `.tex` (nella scheda *Actions* compare un avviso).
+
+**A. Create la coppia di chiavi** (sul vostro computer, una volta sola). Nel terminale (su Windows va bene PowerShell o *Git Bash*), in una cartella **fuori** dal repository, per esempio il Desktop:
+
+```bash
+ssh-keygen -t ed25519 -C "bot-pdf-docs" -f chiave-pdf
+```
+
+Quando chiede la *passphrase* premete **Invio due volte** (deve restare vuota). Nascono due file: `chiave-pdf.pub` (la parte pubblica) e `chiave-pdf` (la parte segreta).
+
+**B. Date a GitHub la parte pubblica.** Nel repository `docs`: *Settings → Deploy keys → Add deploy key*.
+
+- *Title*: `Bot PDF`
+- *Key*: aprite `chiave-pdf.pub` con un editor di testo (anche VS Code) e incollate tutto il contenuto (una riga che inizia con `ssh-ed25519`)
+- spuntate **Allow write access** → *Add key*
+
+**C. Date al bot la parte segreta.** *Settings → Secrets and variables → Actions → New repository secret*.
+
+- *Name*: `CHIAVE_PDF` (esattamente così)
+- *Secret*: aprite il file `chiave-pdf` (quello **senza** `.pub`) e incollate tutto, comprese le righe `-----BEGIN OPENSSH PRIVATE KEY-----` e `-----END OPENSSH PRIVATE KEY-----` → *Add secret*
+
+Poi **cancellate i due file** dal computer: non servono più e la parte segreta non deve girare.
+
+**D. Proteggete `main` con un *ruleset*** (le vecchie *branch protection rules* non permettono di fare eccezioni per una chiave). *Settings → Rules → Rulesets → New ruleset → New branch ruleset*:
+
+- *Ruleset name*: `Proteggi main`; *Enforcement status*: **Active**
+- *Bypass list* → **Add bypass** → spuntate **Deploy keys** → *Add selected*. Solo la chiave del bot potrà scrivere su `main` senza PR
+- *Target branches* → **Add target** → **Include default branch**
+- *Rules*, spuntate:
+  - **Restrict deletions** e **Block force pushes** (già spuntate di solito);
+  - **Require a pull request before merging**, con *Required approvals* = **1**;
+  - **Require status checks to pass** → *Add checks* → scrivete e scegliete **Compila i documenti** (compare dopo che la prima PR l'ha eseguito). **Non** spuntate *Require branches to be up to date before merging*: il bot aggiorna `main` a ogni merge e vi costringerebbe a premere *Update branch* di continuo
+- *Create*
+
+**E. Togliete la vecchia regola**, se c'era: *Settings → Branches* → accanto alla regola per `main`, **Delete**. Le due protezioni si sommano e quella vecchia bloccherebbe il bot.
+
+**F. Provate**: fate il merge di una PR qualsiasi (o *Actions → Pubblica il sito → Run workflow*). Nell'esecuzione, il passo *Salva i PDF nel repository* deve dire `PDF salvati nel repository.`, e su `main` compare il commit *"Aggiorna i PDF accanto ai sorgenti [skip ci]"*. La prima volta salva i PDF di tutti i documenti; da lì in poi solo quelli cambiati.
+
+> Se al passo B GitHub non vi lascia aggiungere la chiave, o al passo D in *Bypass list* non compare **Deploy keys**, probabilmente l'organizzazione ha disattivato le deploy key: chiedete a un proprietario dell'organizzazione `Git-Push-Team` di riattivarle nelle impostazioni dell'organizzazione.
 
 ---
 
 ## 9. Cosa è cambiato rispetto alla versione precedente
 
-Per chi usava il template prima di questa versione:
+**Ultima novità: le cartelle per milestone.**
+
+- I documenti stanno in `Candidatura/`, `RTB/` e `PB/`, ognuna con `documenti/` e `verbali/`, a loro volta divise in `interni/` ed `esterni/` ([sezione 2](#2-mappa-del-repository-cosa-si-tocca-e-cosa-no)). Le vecchie cartelle `verbali/`, `documenti/`, `lettere/` e `candidatura/` non ci sono più; i tre verbali di ottobre sono in `Candidatura/verbali/interni/`.
+- Dopo il merge il bot **salva il PDF accanto a ogni `.tex`** cambiato. Serve la configurazione della [sezione 8](#8-impostazioni-da-fare-una-volta-sola-amministratori).
+- Il sito è stato rifatto: grafo delle milestone in cima, lettera di presentazione in evidenza, anteprime della prima pagina, verbali con la data a colpo d'occhio, copie firmate, diapositive, archivio, membri e ricerca. Le impostazioni sono in `template/sito.toml` ([R15](#r15-aggiornare-il-sito-milestone-diapositive-gruppo)).
+- La release di un tag `rtb…` contiene solo la cartella `RTB/` (lo stesso per `candidatura…` e `pb…`).
+- Le PR segnalano i PDF caricati a mano (errore) e i file in una cartella che non torna col contenuto (avviso).
+- **Branch aperti prima di questa novità**: dopo *Update branch*, spostate il vostro `.tex` nella cartella nuova giusta (anche trascinandolo in VS Code), poi commit e push.
+
+Novità della versione precedente, per chi usava il template ancora prima:
 
 - **Prima riga**: `\documentclass[interno]{gpt}` diventa `\documentclass[verbale=interno]{gpt}` (la vecchia forma funziona ancora).
 - **`\versione{}` non esiste più**: la versione si legge dalla prima riga `\modifica{}` del registro. Se c'è ancora, la compilazione si ferma e vi dice di cancellarla.
