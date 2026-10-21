@@ -1,14 +1,8 @@
-# Output di compilazione. I PDF accanto ai .tex in Candidatura/, RTB/ e PB/
-# li salva SOLO la CI dopo il merge (con git add --force): voi non li
-# caricate mai. I vostri PDF di prova finiscono in build/.
+# Output di compilazione: i PDF li produce la CI, non si committano
 build/
 site/
 *.pdf
 !allegati/**/*.pdf
-# eccezione: i PDF firmati (es. VE-2026-11-05-firmato.pdf) si caricano a mano
-!*-firmato.pdf
-# e le diapositive (presentazioni, diari di bordo), fatte fuori da LaTeX
-!**/diapositive/**/*.pdf
 
 # File temporanei di LaTeX
 *.aux

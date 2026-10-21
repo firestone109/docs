@@ -5,8 +5,7 @@
 #     può sfuggire, nemmeno se sta in un capitolo incluso o nella classe.
 #  2. Commenta la pull request con i soli documenti toccati e il link
 #     al PDF (uno solo: si apre nel browser; più di uno: file zip).
-#  3. Se qualcosa non compila, il controllo diventa rosso. Diventa rosso
-#     anche se la PR carica un PDF che crea la CI (quello accanto al .tex).
+#  3. Se qualcosa non compila, il controllo diventa rosso.
 # =====================================================================
 name: Anteprima PDF
 
