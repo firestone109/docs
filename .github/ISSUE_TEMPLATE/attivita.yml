@@ -2,6 +2,7 @@ name: Attività
 description: Un compito da svolgere su un documento.
 title: "[DOC] "
 labels: ["documentazione"]
+projects: ["Git-Push-Team/1"]   # aggiunge la issue alla bacheca GIT PUSH TEAM
 body:
   - type: dropdown
     id: documento
