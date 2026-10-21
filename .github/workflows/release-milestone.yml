@@ -1,8 +1,9 @@
 # =====================================================================
 #  Release di una milestone  --  parte quando si crea un tag che inizia
-#  con candidatura, rtb oppure pb (es. rtb-v1). Compila tutti i
-#  documenti e crea una GitHub Release con i PDF allegati: è la
-#  "fotografia" ufficiale della consegna. Come si fa: GUIDA.md, ricetta 10.
+#  con candidatura, rtb oppure pb (es. rtb-v1). Compila i documenti
+#  della cartella di quella milestone (Candidatura/, RTB/ oppure PB/) e
+#  crea una GitHub Release con i PDF allegati: è la "fotografia"
+#  ufficiale della consegna. Come si fa: GUIDA.md, ricetta 10.
 # =====================================================================
 name: Release di una milestone
 
@@ -28,17 +29,31 @@ jobs:
       - name: Installa LaTeX
         uses: ./.github/actions/setup-latex
 
-      - name: Compila tutti i documenti
-        run: python3 scripts/build.py
+      - name: Scegli la cartella della milestone
+        id: milestone
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          case "$TAG" in
+            candidatura*) echo "cartella=Candidatura" >> "$GITHUB_OUTPUT" ;;
+            rtb*)         echo "cartella=RTB"         >> "$GITHUB_OUTPUT" ;;
+            pb*)          echo "cartella=PB"          >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Compila i documenti della milestone
+        run: python3 scripts/build.py "${{ steps.milestone.outputs.cartella }}"
 
       - name: Crea la release con i PDF
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
+          CARTELLA: ${{ steps.milestone.outputs.cartella }}
         run: |
           mkdir -p release
-          find site -name '*.pdf' -exec cp {} release/ \;
-          (cd site && zip -qr "../release/documenti-$TAG.zip" . -x 'documenti.json')
+          # i PDF uno per uno (con la versione nel nome) e uno zip che
+          # mantiene le cartelle documenti/verbali, interni/esterni
+          find "site/$CARTELLA" -name '*.pdf' -exec cp {} release/ \;
+          (cd site && zip -qr "../release/documenti-$TAG.zip" "$CARTELLA")
           gh release create "$TAG" release/* \
             --title "Consegna $TAG" \
             --notes-file build/riepilogo.md
