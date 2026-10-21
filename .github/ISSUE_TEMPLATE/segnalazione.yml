@@ -2,6 +2,7 @@ name: Segnalazione di un errore
 description: Un errore trovato in un documento già pubblicato.
 title: "[ERRORE] "
 labels: ["errore"]
+projects: ["Git-Push-Team/1"]   # aggiunge la issue alla bacheca GIT PUSH TEAM
 body:
   - type: input
     id: documento
